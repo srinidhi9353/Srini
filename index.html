@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Event Management Platform</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f4f4f9;
+    }
+    header {
+      background: #007bff;
+      color: #fff;
+      padding: 10px 20px;
+      text-align: center;
+    }
+    .container {
+      max-width: 800px;
+      margin: 20px auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 5px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    .event {
+      border-bottom: 1px solid #ddd;
+      padding: 10px 0;
+      position: relative;
+    }
+    .event:last-child {
+      border-bottom: none;
+    }
+    .event h3 {
+      margin: 0;
+    }
+    .event p {
+      margin: 5px 0;
+      color: #555;
+    }
+    .join-button {
+      background: #28a745;
+      color: #fff;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      position: absolute;
+      right: 0;
+      top: 10px;
+    }
+    .join-button:hover {
+      background: #218838;
+    }
+    .form-container {
+      margin-top: 20px;
+    }
+    .form-container input, .form-container textarea, .form-container button {
+      width: 100%;
+      padding: 10px;
+      margin: 5px 0;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+    .form-container button {
+      background: #007bff;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+    }
+    .form-container button:hover {
+      background: #0056b3;
+    }
+    #join-event-modal {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 1000;
+      background: #fff;
+      padding: 20px;
+      border-radius: 5px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+      width: 90%;
+      max-width: 400px;
+    }
+    #join-event-modal input {
+      margin-bottom: 10px;
+    }
+    #modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 999;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Event Management Platform</h1>
+  </header>
+  <div class="container">
+    <div id="event-list">
+      <h2>Upcoming Events</h2>
+      <!-- Events will be dynamically loaded here -->
+    </div>
+    <div class="form-container">
+      <h2>Add New Event</h2>
+      <form id="event-form">
+        <input type="text" id="event-name" placeholder="Event Name" required />
+        <textarea id="event-description" placeholder="Event Description" required></textarea>
+        <input type="date" id="event-date" required />
+        <button type="submit">Add Event</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal for Joining Event -->
+  <div id="modal-overlay"></div>
+  <div id="join-event-modal">
+    <h2>Join Event</h2>
+    <form id="join-event-form">
+      <input type="hidden" id="event-id" />
+      <input type="text" id="join-name" placeholder="Your Name" required />
+      <input type="email" id="join-email" placeholder="Your Email" required />
+      <input type="tel" id="join-contact" placeholder="Your Contact" required />
+      <button type="submit">Join</button>
+    </form>
+  </div>
+
+  <script>
+    const eventList = document.getElementById('event-list');
+    const eventForm = document.getElementById('event-form');
+    const joinModal = document.getElementById('join-event-modal');
+    const overlay = document.getElementById('modal-overlay');
+    const joinForm = document.getElementById('join-event-form');
+
+    // Fetch and display events
+    async function fetchEvents() {
+      const response = await fetch('https://your-api-endpoint/events');
+      const events = await response.json();
+      eventList.innerHTML = '<h2>Upcoming Events</h2>';
+      events.forEach(event => {
+        const eventDiv = document.createElement('div');
+        eventDiv.className = 'event';
+        eventDiv.innerHTML = `
+          <h3>${event.name}</h3>
+          <p>${event.description}</p>
+          <p><strong>Date:</strong> ${event.date}</p>
+          <button class="join-button" data-id="${event.id}">Join</button>
+        `;
+        eventList.appendChild(eventDiv);
+      });
+
+      // Add event listeners for "Join" buttons
+      document.querySelectorAll('.join-button').forEach(button => {
+        button.addEventListener('click', (e) => {
+          const eventId = e.target.getAttribute('data-id');
+          openJoinModal(eventId);
+        });
+      });
+    }
+
+    // Open the join event modal
+    function openJoinModal(eventId) {
+      document.getElementById('event-id').value = eventId;
+      joinModal.style.display = 'block';
+      overlay.style.display = 'block';
+    }
+
+    // Close the join event modal
+    function closeJoinModal() {
+      joinModal.style.display = 'none';
+      overlay.style.display = 'none';
+    }
+
+    overlay.addEventListener('click', closeJoinModal);
+
+    // Handle joining an event
+    joinForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const eventId = document.getElementById('event-id').value;
+      const name = document.getElementById('join-name').value;
+      const email = document.getElementById('join-email').value;
+      const contact = document.getElementById('join-contact').value;
+
+      await fetch(`https://your-api-endpoint/events/${eventId}/join`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, email, contact }),
+      });
+
+      closeJoinModal();
+      alert('Successfully joined the event!');
+    });
+
+    // Add a new event
+    eventForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('event-name').value;
+      const description = document.getElementById('event-description').value;
+      const date = document.getElementById('event-date').value;
+
+      await fetch('https://your-api-endpoint/events', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, description, date }),
+      });
+
+      eventForm.reset();
+      fetchEvents();
+    });
+
+    // Initial fetch
+    fetchEvents();
+  </script>
+</body>
+</html>
